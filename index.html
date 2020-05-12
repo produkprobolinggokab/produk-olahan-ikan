@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+	<link rel="stylesheet" type="text/css" href="plugin/L.Control.ZoomBar.css"/>
+	<link rel="stylesheet" href="plugin/Control.FullScreen.css" />
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+	<link rel="stylesheet" href="https://unpkg.com/esri-leaflet-geocoder/dist/esri-leaflet-geocoder.css">
+	<link rel="stylesheet" href="plugin/leaflet-control-credits.css" />
+	<link rel="stylesheet" href="plugin/leaflet.scalefactor.min.css" />
+
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+	<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+
+	<script src="https://unpkg.com/esri-leaflet@2.3.3/dist/esri-leaflet.js"
+  	integrity="sha512-cMQ5e58BDuu1pr9BQ/eGRn6HaR6Olh0ofcHFWe5XesdCITVuSBiBZZbhCijBe5ya238f/zMMRYIMIIg1jxv4sQ=="
+  	crossorigin=""></script>
+
+  	<script type="text/javascript" src="plugin/L.Control.ZoomBar.js"></script>
+  	<script src="plugin/Control.FullScreen.js"></script>
+  	<script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js" charset="utf-8"></script>
+  	<script src="https://unpkg.com/esri-leaflet-geocoder"></script>
+  	<script src="plugin/leaflet-control-credits.js"></script>
+  	<script src="plugin/leaflet-control-credits-src.js"></script>
+  	
+
+	<link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/commons/4/4d/Lambang_Kota_Probolinggo.png" />
+	<title>WEBGIS - KOTA PROBOLINGGO</title>
+</head>
+
+<style>
+.pulse {
+	animation: pulsate 0.5s ease-out;
+	-webkit-animation: pulsate 1s ease-out;
+	-webkit-animation-iteration-count: infinite; 
+	opacity: 0.0
+}
+
+
+@keyframes pulsate {
+    0% {transform: opacity: 0.0;}
+    50% {opacity: 1.0;}
+    100% {transform: opacity: 0.0;}
+}
+</style>
+
+<body style="margin: 0; padding: 0;">
+
+<div id="mapid" 
+style="
+	position: absolute;
+    width: 100%;
+    top: 0;
+    bottom: 0;">
+</div>
+
+<div id="basemaps-wrapper" class="leaflet-bar"
+style="
+	position: absolute;
+    top: 10px;
+    right: 50px;
+    z-index: 400;
+    background: white;
+    padding: 5px; ">
+<b>Basemap : <b/>
+	<select id="basemaps">
+	    <option value="Imagery">Imagery</option>
+	    <option value="Streets">Streets</option>
+	</select>
+</div>
+
+<script src="https://npmcdn.com/jquery@3.0.0/dist/jquery.min.js"></script>
+<script src="plugin/leaflet.scalefactor.min.js"></script>
+
+<script>
+$(document).ready(function () {
+var map = L.map('mapid', {
+            zoomControl:false,
+            maxZoom:28,
+            minZoom:1,
+            attributionControl: false,
+            fullscreenControl: true,
+			fullscreenControlOptions: {
+				position: 'topright'
+			},
+        }).setView([-7.7708648,113.2176111], 13);
+
+var layer = L.esri.basemapLayer('Imagery').addTo(map);
+var layerLabels = L.esri.basemapLayer('ImageryLabels').addTo(map);
+
+var searchControl = L.esri.Geocoding.geosearch({
+	position: 'topright'
+	},
+).addTo(map);
+
+var results = L.layerGroup().addTo(map);
+    searchControl.on("results", function(data) {
+        results.clearLayers();
+        for (var i = data.results.length - 1; i >= 0; i--) {
+            results.addLayer(L.marker(data.results[i].latlng));
+        }
+    });
+
+var lc = L.control.locate({
+    position: 'topright',
+    keepCurrentZoomLevel: true,
+    enableHighAccuracy: true,
+    strings: {
+        title: "Lokasi Saya"
+    },
+}).addTo(map);
+
+var zoom_bar = new L.Control.ZoomBar({position: 'topright'}
+).addTo(map);
+
+var credctrl = L.controlCredits({
+	position: 'topleft',
+	image: "./icon.jpg",
+	link: "https://portal.probolinggokota.go.id/",
+	text: "Powered by <br/> <b>Kota Probolinggo</b>"}
+).addTo(map);
+
+function setBasemap (basemap) {
+    if (layer) {
+      map.removeLayer(layer);
+    }
+
+    layer = L.esri.basemapLayer(basemap);
+
+    map.addLayer(layer);
+
+    if (layerLabels) {
+      map.removeLayer(layerLabels);
+    }
+
+    if (
+      basemap === 'ShadedRelief' ||
+      basemap === 'Oceans' ||
+      basemap === 'Gray' ||
+      basemap === 'DarkGray' ||
+      basemap === 'Terrain'
+    ) {
+      layerLabels = L.esri.basemapLayer(basemap + 'Labels');
+      map.addLayer(layerLabels);
+    } else if (basemap.includes('Imagery')) {
+      layerLabels = L.esri.basemapLayer('ImageryLabels');
+      map.addLayer(layerLabels);
+    }
+  }
+
+  document
+    .querySelector('#basemaps')
+    .addEventListener('change', function (e) {
+      var basemap = e.target.value;
+      setBasemap(basemap);
+    });
+
+var scalefactor = L.control.scalefactor({
+	position: 'bottomright',
+}
+).addTo(map);
+
+
+$.getJSON('ikm.geojson', function (data) {
+    L.geoJson(data, {
+        onEachFeature: function (feature, layer) {
+            layer.bindPopup(
+            	'<h4><b>' + feature.properties.perusahaan + '</b></h4>' + 
+            	'<b>Pemilik    : </b>' + feature.properties.kontak + '<br>' +
+            	'<b>Alamat     : </b>' + feature.properties.jalan + '<br>' +
+            	'<b>Kelurahan  : </b>' + feature.properties.kelurahan + '<br>' +
+            	'<b>Kecamatan  : </b>' + feature.properties.kecamatan + '<br>' +
+            	'<b>Telp/Fax  : </b>' + feature.properties.telp + '<br>' +
+            	'<b>Produk  : </b>' + feature.properties.produk
+            );
+        },
+        pointToLayer: function (feature, latlng) {
+            return L.circleMarker(latlng, 
+            	{className: 'pulse',
+            	radius: 5,
+            	color: 'red'
+            	}
+            );
+        }
+    }).addTo(map);
+});
+
+});
+</script>
+
+</body>
+</html>
